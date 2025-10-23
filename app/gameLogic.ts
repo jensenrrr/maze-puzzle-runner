@@ -18,11 +18,13 @@ function withinBounds(p: Position, width: number, height: number): boolean {
 }
 // Enemies -------------------------------------------------------------
 function createInitialEnemies(): Enemy[] {
-  // Placeholder starting positions; ensure they are placed on walkable floor cells later
+  // 2 roaming enemies (wanderers) that travel 6 paces randomly
+  // Current enemies are stationary (chasers) until clicked
   return [
     { id: 1, kind: 'wanderer', position: { x: 10, y: 5 }, direction: 'left', movesPerTurn: 6 },
     { id: 2, kind: 'wanderer', position: { x: 4, y: 9 }, direction: 'right', movesPerTurn: 6 },
     { id: 3, kind: 'chaser', position: { x: 12, y: 10 }, direction: 'up', active: false, movesPerTurn: 3 },
+    { id: 4, kind: 'chaser', position: { x: 16, y: 15 }, direction: 'down', active: false, movesPerTurn: 3 },
   ];
 }
 
@@ -75,11 +77,48 @@ export function moveEnemies(state: GameState): Enemy[] {
     if (enemy.kind === 'wanderer') {
       let updated = { ...enemy };
       for (let i = 0; i < (enemy.movesPerTurn || 6); i++) {
+        const currentPos = updated.position;
         const dirs: Direction[] = ['up', 'down', 'left', 'right'];
-        const dir = dirs[Math.floor(Math.random() * dirs.length)];
-        const target = getAdjacent(updated.position, dir);
+        
+        // Get available directions
+        const availableDirs = dirs.filter(dir => isWalkable(state, getAdjacent(currentPos, dir)));
+        
+        if (availableDirs.length === 0) break; // Stuck
+        
+        // If at intersection (more than 2 directions), prefer turning
+        let chosenDir: Direction;
+        if (availableDirs.length > 2) {
+          // At intersection - prefer directions that aren't opposite to current direction
+          const oppositeDir = getOppositeDirection(updated.direction);
+          const nonBacktrackDirs = availableDirs.filter(dir => dir !== oppositeDir);
+          
+          if (nonBacktrackDirs.length > 0) {
+            // Weight directions towards open gates
+            const weightedDirs = nonBacktrackDirs.flatMap(dir => {
+              const target = getAdjacent(currentPos, dir);
+              const cell = state.grid[target.y][target.x];
+              // If target leads towards an open gate, add it multiple times for weighting
+              if (cell.type === 'gate' && cell.gateType && state.gateStatus[cell.gateType]) {
+                return [dir, dir, dir]; // 3x weight for open gates
+              }
+              return [dir];
+            });
+            chosenDir = weightedDirs[Math.floor(Math.random() * weightedDirs.length)];
+          } else {
+            chosenDir = availableDirs[Math.floor(Math.random() * availableDirs.length)];
+          }
+        } else {
+          // Not at intersection, move normally but avoid backtracking if possible
+          const oppositeDir = getOppositeDirection(updated.direction);
+          const nonBacktrackDirs = availableDirs.filter(dir => dir !== oppositeDir);
+          chosenDir = nonBacktrackDirs.length > 0 
+            ? nonBacktrackDirs[Math.floor(Math.random() * nonBacktrackDirs.length)]
+            : availableDirs[Math.floor(Math.random() * availableDirs.length)];
+        }
+        
+        const target = getAdjacent(updated.position, chosenDir);
         if (isWalkable(state, target)) {
-          updated = { ...updated, position: target, direction: dir };
+          updated = { ...updated, position: target, direction: chosenDir };
         }
       }
       return updated;
@@ -109,6 +148,15 @@ export function moveEnemies(state: GameState): Enemy[] {
     }
     return enemy;
   });
+}
+
+function getOppositeDirection(dir: Direction): Direction {
+  switch (dir) {
+    case 'up': return 'down';
+    case 'down': return 'up';
+    case 'left': return 'right';
+    case 'right': return 'left';
+  }
 }
 
 
@@ -143,7 +191,23 @@ export function endTurn(state: GameState): GameState {
 
 // Gate Toggling ------------------------------------------------------
 export function toggleGateType(state: GameState, gate: GateType): GameState {
-  return { ...state, gateStatus: { ...state.gateStatus, [gate]: !state.gateStatus[gate] } };
+  const isCurrentlyOpen = state.gateStatus[gate];
+  
+  if (isCurrentlyOpen) {
+    // If gate is open, just close it
+    return { ...state, gateStatus: { ...state.gateStatus, [gate]: false } };
+  } else {
+    // If gate is closed, open it and close all others
+    const newGateStatus: Record<GateType, boolean> = {
+      gateA: false,
+      gateB: false,
+      gateC: false,
+      gateD: false,
+      gateE: false,
+    };
+    newGateStatus[gate] = true;
+    return { ...state, gateStatus: newGateStatus };
+  }
 }
 
 export function toggleChaser(state: GameState, enemyId: number): GameState {
@@ -151,4 +215,12 @@ export function toggleChaser(state: GameState, enemyId: number): GameState {
     ...state,
     enemies: state.enemies.map(e => e.id === enemyId && e.kind === 'chaser' ? { ...e, active: !e.active } : e)
   };
+}
+
+export function handleEnemyClick(state: GameState, x: number, y: number): GameState {
+  const enemy = state.enemies.find(e => e.position.x === x && e.position.y === y);
+  if (enemy && enemy.kind === 'chaser') {
+    return toggleChaser(state, enemy.id);
+  }
+  return state;
 }

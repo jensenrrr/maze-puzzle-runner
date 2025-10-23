@@ -2,10 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { GameState, Direction, GateType } from '../types';
-import { initializeGameState, processPlayerMove, endTurn, toggleGateType } from '../gameLogic';
+import { initializeGameState, processPlayerMove, endTurn, toggleGateType, handleEnemyClick } from '../gameLogic';
 import MazeGrid from './MazeGrid';
 import GameControls from './GameControls';
-import GameInfo from './GameInfo';
 import GateControls from './GateControls';
 
 export default function MazeGame() {
@@ -25,6 +24,10 @@ export default function MazeGame() {
 
   const handleToggleGate = useCallback((gateType: GateType) => {
     setGameState(prevState => toggleGateType(prevState, gateType));
+  }, []);
+
+  const handleEnemyClickCallback = useCallback((x: number, y: number) => {
+    setGameState(prevState => handleEnemyClick(prevState, x, y));
   }, []);
 
   useEffect(() => {
@@ -78,11 +81,10 @@ export default function MazeGame() {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <MazeGrid gameState={gameState} />
+            <MazeGrid gameState={gameState} onEnemyClick={handleEnemyClickCallback} />
           </div>
           
           <div className="space-y-4">
-            <GameInfo gameState={gameState} />
             <GateControls 
               gateStatus={gameState.gateStatus}
               onToggleGate={handleToggleGate}
