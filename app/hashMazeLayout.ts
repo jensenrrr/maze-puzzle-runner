@@ -1,4 +1,4 @@
-import { Cell, CellType, Position } from './types';
+import { Cell, CellType, Position, GateType } from './types';
 
 export const originalMaze = `##############S##############
 #   #                       #
@@ -30,34 +30,35 @@ export const originalMaze = `##############S##############
 # #               #         #
 ##############E##############`
 
+// HASH_MAZE includes gates (replace internal wall cells only): 3 of each $ % & @ ?
 export const HASH_MAZE = `##############S##############
 #   #                       #
 ### # ########### ######### #
 # # # #         #     #     #
-# # ### ####### ##### # ### #
+# # ### ##%#### ##### # ### #
 #   #   #     # #   # # #   #
-# ### ### ### # # # # # ### #
+# ### ### ### # % # # # ### #
 #     # # #   # # # # #   # #
-####### # # ### # # ##### # #
+####?## # # ### # # ##### # #
 # #   #   #   #   # #     # #
 # # # # ##### ##### # ##### #
 # # #   #   # #   #   #   # #
-# # ##### ### # # ##### # # #
+# # ##### ### & # ##### # # #
 # #   #     #   #   #   # # #
 # ### ### # ####### # ### # #
 #   #   # #       # # #   # #
 ### ### ##### ### # # # ### #
 #     #       # # #   #   # #
-# ############# # ####### # #
+# #######$##### # ####### # #
 #     #     #   #   #     # #
-# ### # # # # # # ### ### # #
-#   # # # #   # # #   #   # #
-# ### # # ### ### # ####### #
+# ### # # # @ # # ### ### # #
+#   # # # #   # # @   #   # #
+# ### # $ ### ### # ####### #
 # #   # #   # #   # #       #
-# # ### ### ### ### # #######
+# # ### ### ###$### ? #######
 # # #   # #     # # #   #   #
-# # # ### ####### # ### ### #
-# #               #         #
+# # # ########### # ####### #
+# #               #   #     #
 ##############E##############`
 export interface ParsedHashMaze {
   grid: Cell[][];
@@ -93,6 +94,19 @@ export function parseHashMaze(ascii: string): ParsedHashMaze {
       } else if (ch === 'E') {
         cellType = 'exit';
         exit = { x, y };
+      } else if (['$', '%', '&', '@', '?'].includes(ch)) {
+        cellType = 'gate';
+        // gate walkability determined later using gateStatus; default false until opened
+        isWalkable = false;
+        const mapping: Record<string, GateType> = {
+          '$': 'gateA',
+          '%': 'gateB',
+          '&': 'gateC',
+          '@': 'gateD',
+          '?': 'gateE',
+        };
+        grid[y][x] = { type: cellType, isWalkable, gateType: mapping[ch] };
+        continue; // already set cell; skip below assignment
       }
       grid[y][x] = { type: cellType, isWalkable };
     }

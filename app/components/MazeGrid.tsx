@@ -1,15 +1,26 @@
 'use client';
 
-import { GameState } from '../types';
+import { GameState, GateType } from '../types';
 
 interface MazeGridProps {
   gameState: GameState;
 }
 
 export default function MazeGrid({ gameState }: MazeGridProps) {
-  const { player, enemies, grid, exitPosition } = gameState;
+  const { player, enemies, grid, exitPosition, gateStatus } = gameState;
   const width = gameState.gridWidth;
   const height = gameState.gridHeight;
+
+  const gateColor = (gate: GateType, open: boolean) => {
+    const base = open ? 'bg-emerald-600' : 'bg-amber-700';
+    switch (gate) {
+      case 'gateA': return `${base} ring-2 ring-emerald-300`;
+      case 'gateB': return `${base} ring-2 ring-cyan-300`;
+      case 'gateC': return `${base} ring-2 ring-fuchsia-300`;
+      case 'gateD': return `${base} ring-2 ring-indigo-300`;
+      case 'gateE': return `${base} ring-2 ring-rose-300`;
+    }
+  };
 
   const getCellContent = (x: number, y: number) => {
     const cell = grid[y][x];
@@ -19,12 +30,26 @@ export default function MazeGrid({ gameState }: MazeGridProps) {
     if (cell.type === 'wall') {
       return <div className="w-full h-full bg-neutral-900 border border-white/40"></div>;
     }
+    if (cell.type === 'gate' && cell.gateType) {
+      const isOpen = gateStatus[cell.gateType];
+      return (
+        <div className={`w-full h-full relative border border-neutral-600 flex items-center justify-center cursor-pointer ${gateColor(cell.gateType, isOpen)}`}
+             onClick={() => {/* gate cell itself can toggle gate */}}
+        >
+          <span className="text-[10px] font-bold text-white uppercase">
+            {cell.gateType.replace('gate','')}{isOpen ? '' : ' (X)'}
+          </span>
+        </div>
+      );
+    }
     return (
       <div className={`w-full h-full relative bg-neutral-700 border border-neutral-600`}>
         {isExit && <div className="absolute inset-0 bg-green-400 opacity-50"></div>}
         {enemy && (
-          <div className="absolute inset-1 flex items-center justify-center bg-red-500 rounded-full border-2 border-red-300 animate-pulse">
-            <span className="text-white text-xs font-bold">E</span>
+          <div className={`absolute inset-1 flex items-center justify-center rounded-full border-2 ${enemy.kind === 'chaser' ? (enemy.active ? 'bg-purple-600 border-purple-300' : 'bg-purple-900 border-purple-500 cursor-pointer') : 'bg-red-500 border-red-300 animate-pulse'}`}
+               onClick={() => {/* chaser toggle handled externally */}}
+          >
+            <span className="text-white text-xs font-bold">{enemy.kind === 'chaser' ? (enemy.active ? 'C' : 'c') : 'E'}</span>
           </div>
         )}
         {isPlayer && (
@@ -55,7 +80,23 @@ export default function MazeGrid({ gameState }: MazeGridProps) {
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-          <span>Enemy</span>
+          <span>Wanderer</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-purple-600 rounded-full"></div>
+          <span>Chaser (active)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-purple-900 rounded-full"></div>
+          <span>Chaser (inactive)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-emerald-600 ring-2 ring-emerald-300"></div>
+          <span>Gate A (open)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-amber-700 ring-2 ring-emerald-300"></div>
+          <span>Gate A (closed)</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 bg-neutral-900 border border-white/40"></div>

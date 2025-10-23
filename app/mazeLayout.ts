@@ -1,5 +1,12 @@
 // ASCII maze layout parsing to wall edges and start/exit positions
-import { Position, WallEdge } from './types';
+import { Position } from './types';
+
+// Note: WallEdge type for legacy compatibility
+interface WallEdge {
+  from: Position;
+  to: Position;
+  type: string;
+}
 
 export const ASCII_MAZE = `+-+---+-----+-----+---+--S------------+---+-------+
 | |   |     |     |   |               |   |       |

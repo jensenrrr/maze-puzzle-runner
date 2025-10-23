@@ -1,4 +1,4 @@
-import { Direction, Enemy, GameState, Position } from './types';
+import { Direction, Enemy, GameState, Position, GateType } from './types';
 import { parseHashMaze, HASH_MAZE } from './hashMazeLayout';
 
 export let MAZE_SIZE = 20; // legacy constant (not used directly for movement now)
@@ -18,17 +18,26 @@ function withinBounds(p: Position, width: number, height: number): boolean {
 }
 // Enemies -------------------------------------------------------------
 function createInitialEnemies(): Enemy[] {
+  // Placeholder starting positions; ensure they are placed on walkable floor cells later
   return [
-    { id: 1, position: { x: 10, y: 5 }, direction: 'left' },
-    { id: 2, position: { x: 4, y: 9 }, direction: 'right' },
-    { id: 3, position: { x: 12, y: 10 }, direction: 'up' },
+    { id: 1, kind: 'wanderer', position: { x: 10, y: 5 }, direction: 'left', movesPerTurn: 6 },
+    { id: 2, kind: 'wanderer', position: { x: 4, y: 9 }, direction: 'right', movesPerTurn: 6 },
+    { id: 3, kind: 'chaser', position: { x: 12, y: 10 }, direction: 'up', active: false, movesPerTurn: 3 },
   ];
 }
+
 
 // Game State Initialization ------------------------------------------
 export function initializeGameState(): GameState {
   const parsed = parseHashMaze(HASH_MAZE);
   MAZE_SIZE = Math.max(parsed.width, parsed.height);
+  const gateStatus: Record<GateType, boolean> = {
+    gateA: false,
+    gateB: false,
+    gateC: false,
+    gateD: false,
+    gateE: false,
+  };
   return {
     grid: parsed.grid,
     player: parsed.start,
@@ -40,13 +49,18 @@ export function initializeGameState(): GameState {
     exitPosition: parsed.exit,
     gridWidth: parsed.width,
     gridHeight: parsed.height,
+    gateStatus,
   };
 }
+
 
 // Movement & Collision -----------------------------------------------
 function isWalkable(state: GameState, pos: Position): boolean {
   if (!withinBounds(pos, state.gridWidth, state.gridHeight)) return false;
   const cell = state.grid[pos.y][pos.x];
+  if (cell.type === 'gate') {
+    return !!(cell.gateType && state.gateStatus[cell.gateType]);
+  }
   return cell.isWalkable;
 }
 
@@ -58,23 +72,45 @@ export function movePlayer(state: GameState, direction: Direction): GameState {
 
 export function moveEnemies(state: GameState): Enemy[] {
   return state.enemies.map(enemy => {
-    const target = getAdjacent(enemy.position, enemy.direction);
-    if (isWalkable(state, target)) {
-      return { ...enemy, position: target };
+    if (enemy.kind === 'wanderer') {
+      let updated = { ...enemy };
+      for (let i = 0; i < (enemy.movesPerTurn || 6); i++) {
+        const dirs: Direction[] = ['up', 'down', 'left', 'right'];
+        const dir = dirs[Math.floor(Math.random() * dirs.length)];
+        const target = getAdjacent(updated.position, dir);
+        if (isWalkable(state, target)) {
+          updated = { ...updated, position: target, direction: dir };
+        }
+      }
+      return updated;
+    } else if (enemy.kind === 'chaser') {
+      // If not active, remain stationary
+      if (!enemy.active) return enemy;
+      let updated = { ...enemy };
+      for (let i = 0; i < (enemy.movesPerTurn || 3); i++) {
+        // Simple greedy move towards player
+        const dx = state.player.x - updated.position.x;
+        const dy = state.player.y - updated.position.y;
+        let dir: Direction | undefined;
+        if (Math.abs(dx) > Math.abs(dy)) {
+          dir = dx < 0 ? 'left' : 'right';
+        } else if (dy !== 0) {
+          dir = dy < 0 ? 'up' : 'down';
+        } else {
+          dir = undefined;
+        }
+        if (!dir) break;
+        const target = getAdjacent(updated.position, dir);
+        if (isWalkable(state, target)) {
+          updated = { ...updated, position: target, direction: dir };
+        }
+      }
+      return updated;
     }
-    // Reverse direction if blocked or wall
-    return { ...enemy, direction: getOpposite(enemy.direction) };
+    return enemy;
   });
 }
 
-function getOpposite(d: Direction): Direction {
-  switch (d) {
-    case 'up': return 'down';
-    case 'down': return 'up';
-    case 'left': return 'right';
-    case 'right': return 'left';
-  }
-}
 
 export function checkCollision(player: Position, enemies: Enemy[]): boolean {
   return enemies.some(e => e.position.x === player.x && e.position.y === player.y);
@@ -105,5 +141,14 @@ export function endTurn(state: GameState): GameState {
   return { ...next, inTurnMoves: 0, turnCount: next.turnCount + 1 };
 }
 
-// Gate Set Switching -------------------------------------------------
-// Gate functions removed in cell-based hash maze model
+// Gate Toggling ------------------------------------------------------
+export function toggleGateType(state: GameState, gate: GateType): GameState {
+  return { ...state, gateStatus: { ...state.gateStatus, [gate]: !state.gateStatus[gate] } };
+}
+
+export function toggleChaser(state: GameState, enemyId: number): GameState {
+  return {
+    ...state,
+    enemies: state.enemies.map(e => e.id === enemyId && e.kind === 'chaser' ? { ...e, active: !e.active } : e)
+  };
+}

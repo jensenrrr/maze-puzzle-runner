@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { GameState, Direction } from '../types';
-import { initializeGameState, processPlayerMove, endTurn } from '../gameLogic';
+import { GameState, Direction, GateType } from '../types';
+import { initializeGameState, processPlayerMove, endTurn, toggleGateType } from '../gameLogic';
 import MazeGrid from './MazeGrid';
 import GameControls from './GameControls';
 import GameInfo from './GameInfo';
+import GateControls from './GateControls';
 
 export default function MazeGame() {
   const [gameState, setGameState] = useState<GameState>(initializeGameState());
@@ -20,6 +21,10 @@ export default function MazeGame() {
 
   const handleReset = useCallback(() => {
     setGameState(initializeGameState());
+  }, []);
+
+  const handleToggleGate = useCallback((gateType: GateType) => {
+    setGameState(prevState => toggleGateType(prevState, gateType));
   }, []);
 
   useEffect(() => {
@@ -78,6 +83,10 @@ export default function MazeGame() {
           
           <div className="space-y-4">
             <GameInfo gameState={gameState} />
+            <GateControls 
+              gateStatus={gameState.gateStatus}
+              onToggleGate={handleToggleGate}
+            />
             <GameControls 
               onMove={handleMove} 
               onEndTurn={handleEndTurn}
