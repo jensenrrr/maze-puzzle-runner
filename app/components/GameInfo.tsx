@@ -16,24 +16,20 @@ export default function GameInfo({ gameState }: GameInfoProps) {
           <span className="text-gray-300">Turn:</span>
           <span className="text-xl font-semibold">{gameState.turnCount}</span>
         </div>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-300">Moves this turn:</span>
+          <span className="text-xl font-semibold">{gameState.inTurnMoves}</span>
+        </div>
         
         <div className="flex justify-between items-center">
           <span className="text-gray-300">Enemies:</span>
           <span className="text-xl font-semibold">{gameState.enemies.length}</span>
         </div>
         
-        <div className="flex justify-between items-center">
-          <span className="text-gray-300">Gates:</span>
-          <span className="text-xl font-semibold">
-            {gameState.gates.filter(g => g.isOpen).length}/{gameState.gates.length} open
-          </span>
-        </div>
-        
         <div className="border-t border-gray-700 pt-3 mt-3">
           <div className="text-sm text-gray-400">
-            <p className="mb-2">Gates toggle every 3 turns</p>
-            <p className="mb-2">Shifting walls move every 2 turns</p>
-            <p>Enemies patrol and change direction when blocked</p>
+            <p className="mb-2">Take multiple moves, then End Turn.</p>
+            <p>Enemies move only when a turn ends.</p>
           </div>
         </div>
       </div>

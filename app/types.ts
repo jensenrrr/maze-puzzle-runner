@@ -1,20 +1,17 @@
-// Types for the maze puzzle game
-
-export type CellType = 'empty' | 'wall' | 'gate' | 'shifting' | 'player' | 'enemy';
+// Cell-based maze types: '#' are walls occupying space, ' ' open squares.
 
 export interface Position {
   x: number;
   y: number;
 }
 
+export type Direction = 'up' | 'down' | 'left' | 'right';
+
+export type CellType = 'wall' | 'floor' | 'start' | 'exit';
+
 export interface Cell {
   type: CellType;
   isWalkable: boolean;
-}
-
-export interface Gate {
-  position: Position;
-  isOpen: boolean;
 }
 
 export interface Enemy {
@@ -23,21 +20,15 @@ export interface Enemy {
   direction: Direction;
 }
 
-export interface ShiftingPart {
-  positions: Position[];
-  direction: Direction;
-  shiftPhase: number;
-}
-
-export type Direction = 'up' | 'down' | 'left' | 'right';
-
 export interface GameState {
-  maze: Cell[][];
+  grid: Cell[][]; // 2D grid of cells
   player: Position;
   enemies: Enemy[];
-  gates: Gate[];
-  shiftingParts: ShiftingPart[];
   turnCount: number;
+  inTurnMoves: number;
   gameOver: boolean;
   gameWon: boolean;
+  exitPosition: Position;
+  gridWidth: number;
+  gridHeight: number;
 }

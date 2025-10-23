@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Maze Puzzle Runner",
-  description: "A dynamic maze puzzle game with shifting parts, gates, and enemies",
+  description: "A turn-based maze puzzle with walls, enemies, and an exit to reach",
 };
 
 export default function RootLayout({

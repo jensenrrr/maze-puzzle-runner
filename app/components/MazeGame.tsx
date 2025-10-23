@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { GameState, Direction } from '../types';
-import { initializeGameState, processTurn } from '../gameLogic';
+import { initializeGameState, processPlayerMove, endTurn } from '../gameLogic';
 import MazeGrid from './MazeGrid';
 import GameControls from './GameControls';
 import GameInfo from './GameInfo';
@@ -11,7 +11,11 @@ export default function MazeGame() {
   const [gameState, setGameState] = useState<GameState>(initializeGameState());
 
   const handleMove = useCallback((direction: Direction) => {
-    setGameState(prevState => processTurn(prevState, direction));
+    setGameState(prevState => processPlayerMove(prevState, direction));
+  }, []);
+
+  const handleEndTurn = useCallback(() => {
+    setGameState(prevState => endTurn(prevState));
   }, []);
 
   const handleReset = useCallback(() => {
@@ -61,7 +65,7 @@ export default function MazeGame() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
       <div className="max-w-6xl w-full">
         <h1 className="text-4xl font-bold text-center text-white mb-2">
-          Maze Puzzle Runner
+          Maze Puzzle Runner test
         </h1>
         <p className="text-center text-gray-300 mb-6">
           Navigate to the bottom-right corner while avoiding enemies!
@@ -74,7 +78,12 @@ export default function MazeGame() {
           
           <div className="space-y-4">
             <GameInfo gameState={gameState} />
-            <GameControls onMove={handleMove} onReset={handleReset} gameState={gameState} />
+            <GameControls 
+              onMove={handleMove} 
+              onEndTurn={handleEndTurn}
+              onReset={handleReset} 
+              gameState={gameState} 
+            />
           </div>
         </div>
         
