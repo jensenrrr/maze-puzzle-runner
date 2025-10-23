@@ -16,14 +16,15 @@ export interface Cell {
   gateType?: GateType; // present when type === 'gate'
 }
 
-export type EnemyKind = 'wanderer' | 'chaser';
+export type EnemyKind = 'stationary' | 'roaming';
 export interface Enemy {
   id: number;
   kind: EnemyKind;
   position: Position;
-  direction: Direction; // last move direction (wanderers) or next planned direction (chaser)
-  active?: boolean; // for chasers: true when chasing player
-  movesPerTurn?: number; // 6 for wanderer (distributed randomly), 3 for active chaser
+  direction: Direction; // last move direction
+  active?: boolean; // for stationary: true when chasing player; for roaming: true when chasing player
+  movesPerTurn?: number; // 3 for stationary when active, 6 for roaming
+  lastPosition?: Position; // for pathfinding to avoid immediate backtracking
 }
 
 export interface GameState {

@@ -10,7 +10,7 @@ interface GameControlsProps {
 }
 
 export default function GameControls({ onMove, onEndTurn, onReset, gameState }: GameControlsProps) {
-  const isDisabled = gameState.gameOver || gameState.gameWon;
+  const isDisabled = gameState.gameWon;
 
   return (
     <div className="bg-gray-800 p-6 rounded-lg shadow-lg text-white">

@@ -26,13 +26,13 @@ export default function MazeGame() {
     setGameState(prevState => toggleGateType(prevState, gateType));
   }, []);
 
-  const handleEnemyClickCallback = useCallback((x: number, y: number) => {
-    setGameState(prevState => handleEnemyClick(prevState, x, y));
+  const handleEnemyClickCallback = useCallback((x: number, y: number, isDelete: boolean = false) => {
+    setGameState(prevState => handleEnemyClick(prevState, x, y, isDelete));
   }, []);
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
-      if (gameState.gameOver || gameState.gameWon) return;
+      if (gameState.gameWon) return;
 
       let direction: Direction | undefined;
 
@@ -73,10 +73,10 @@ export default function MazeGame() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
       <div className="max-w-6xl w-full">
         <h1 className="text-4xl font-bold text-center text-white mb-2">
-          Maze Puzzle Runner test
+          DnD Maze Campaign Tool
         </h1>
         <p className="text-center text-gray-300 mb-6">
-          Navigate to the bottom-right corner while avoiding enemies!
+          Manage enemy positions and gate states for your DnD campaign!
         </p>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -98,32 +98,17 @@ export default function MazeGame() {
           </div>
         </div>
         
-        {gameState.gameOver && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center">
-            <div className="bg-red-600 text-white p-8 rounded-lg shadow-2xl text-center">
-              <h2 className="text-3xl font-bold mb-4">Game Over!</h2>
-              <p className="mb-6">You were caught by an enemy!</p>
-              <button
-                onClick={handleReset}
-                className="bg-white text-red-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
-          </div>
-        )}
-        
         {gameState.gameWon && (
           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center">
             <div className="bg-green-600 text-white p-8 rounded-lg shadow-2xl text-center">
-              <h2 className="text-3xl font-bold mb-4">Victory!</h2>
-              <p className="mb-2">You reached the goal!</p>
+              <h2 className="text-3xl font-bold mb-4">Player Reached Exit!</h2>
+              <p className="mb-2">The player has successfully navigated to the exit.</p>
               <p className="mb-6">Turns taken: {gameState.turnCount}</p>
               <button
                 onClick={handleReset}
                 className="bg-white text-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
               >
-                Play Again
+                Reset Scenario
               </button>
             </div>
           </div>

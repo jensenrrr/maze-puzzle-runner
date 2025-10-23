@@ -32,32 +32,32 @@ export const originalMaze = `##############S##############
 
 // HASH_MAZE includes gates (replace internal wall cells only): 3 of each $ % & @ ?
 export const HASH_MAZE = `##############S##############
-#   #                       #
+#   # 9                     #
 ### # ########### ######### #
 # # # #         #     #     #
 # # ### ##%#### ##@## # ### #
-#   #   #     # #   # # #   #
-# ### ### ### # % # # # ### #
-#     # # #   # # # # #   # #
-####?## # # ### # # ##### # #
+#   #   #   9 # #   # # #   #
+# ### ### ### # # # # # ### #
+#     # # # * # # # # #   # #
+####?## # # ### # # #&### # #
 # #   #   #   #   # #     $ #
 # # # # ##### ##### # ##### #
 # # #   #   # #   #   #   # #
-# # ##### ### & # ##### # # #
+# # ##### ### # # ##### # # #
 # ?   #     #   #   #   # # #
-# ### ### # ####### # ### # #
-#   #   # #       # # #   # #
+# ### ### # ##%#### # ### # #
+#   #   # #       # #9#   # #
 ### ### ##### ### # # # ### #
-#     #       # # #   #   # #
+#     #   *   # # #   #   # #
 # #######$##### # ####### # #
-#     #     #   #   #     # #
+#     #     #   #   #   9 # #
 # ### # # # # # # ### ### # #
 #   # # # #   # # @   #   # #
 # ### # # ### ### # ####### #
-# #   # #   # #   # #       #
+#9#   # #   # #   # #     * #
 # # ### ### ####### # #######
-# # #   # #     # # #   #   #
-# # # ########### # ####### #
+# # #   # #  9  # # #   #   #
+#*# # ########### # ####### #
 # #    $           #   #     #
 ##############E##############`
 export interface ParsedHashMaze {
@@ -66,6 +66,7 @@ export interface ParsedHashMaze {
   exit: Position;
   width: number;
   height: number;
+  enemies: { id: number; kind: 'stationary' | 'roaming'; position: Position }[];
 }
 
 export function parseHashMaze(ascii: string): ParsedHashMaze {
@@ -75,6 +76,8 @@ export function parseHashMaze(ascii: string): ParsedHashMaze {
   const grid: Cell[][] = Array.from({ length: height }, () => Array.from({ length: width }, () => ({ type: 'floor', isWalkable: true })));
   let start: Position = { x: 0, y: 0 };
   let exit: Position = { x: width - 1, y: height - 1 };
+  const enemies: { id: number; kind: 'stationary' | 'roaming'; position: Position }[] = [];
+  let enemyIdCounter = 1;
 
   for (let y = 0; y < height; y++) {
     const row = lines[y];
@@ -82,6 +85,7 @@ export function parseHashMaze(ascii: string): ParsedHashMaze {
       const ch = row[x];
       let cellType: CellType = 'floor';
       let isWalkable = true;
+      
       if (ch === '#') {
         cellType = 'wall';
         isWalkable = false;
@@ -94,6 +98,16 @@ export function parseHashMaze(ascii: string): ParsedHashMaze {
       } else if (ch === 'E') {
         cellType = 'exit';
         exit = { x, y };
+      } else if (ch === '9') {
+        // Stationary enemy (chaser that needs to be clicked to activate)
+        cellType = 'floor';
+        isWalkable = true;
+        enemies.push({ id: enemyIdCounter++, kind: 'stationary', position: { x, y } });
+      } else if (ch === '*') {
+        // Roaming enemy (moves randomly until seeing player)
+        cellType = 'floor';
+        isWalkable = true;
+        enemies.push({ id: enemyIdCounter++, kind: 'roaming', position: { x, y } });
       } else if (['$', '%', '&', '@', '?'].includes(ch)) {
         cellType = 'gate';
         // gate walkability determined later using gateStatus; default false until opened
@@ -112,5 +126,5 @@ export function parseHashMaze(ascii: string): ParsedHashMaze {
     }
   }
 
-  return { grid, start, exit, width, height };
+  return { grid, start, exit, width, height, enemies };
 }

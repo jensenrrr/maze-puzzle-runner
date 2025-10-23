@@ -4,7 +4,7 @@ import { GameState, GateType } from '../types';
 
 interface MazeGridProps {
   gameState: GameState;
-  onEnemyClick?: (x: number, y: number) => void;
+  onEnemyClick?: (x: number, y: number, isDelete?: boolean) => void;
 }
 
 export default function MazeGrid({ gameState, onEnemyClick }: MazeGridProps) {
@@ -37,8 +37,8 @@ export default function MazeGrid({ gameState, onEnemyClick }: MazeGridProps) {
         <div className={`w-full h-full relative flex items-center justify-center cursor-pointer ${gateColor(cell.gateType, isOpen)}`}
              onClick={() => {/* gate cell itself can toggle gate */}}
         >
-          <span className="text-[10px] font-bold text-white uppercase">
-            {cell.gateType.replace('gate','')}{isOpen ? '' : ' (X)'}
+          <span className={`text-[10px] font-bold uppercase ${isOpen ? 'text-white' : 'text-red-400'}`}>
+            {cell.gateType.replace('gate','')}
           </span>
         </div>
       );
@@ -47,10 +47,22 @@ export default function MazeGrid({ gameState, onEnemyClick }: MazeGridProps) {
       <div className={`w-full h-full relative bg-neutral-700 border border-neutral-600`}>
         {isExit && <div className="absolute inset-0 bg-green-400 opacity-50"></div>}
         {enemy && (
-          <div className={`absolute inset-1 flex items-center justify-center rounded-full border-2 ${enemy.kind === 'chaser' ? (enemy.active ? 'bg-purple-600 border-purple-300' : 'bg-purple-900 border-purple-500 cursor-pointer') : 'bg-red-500 border-red-300 animate-pulse'}`}
-               onClick={() => onEnemyClick?.(x, y)}
+          <div className={`absolute inset-1 flex items-center justify-center rounded-full border-2 ${
+            enemy.kind === 'stationary' 
+              ? (enemy.active ? 'bg-purple-600 border-purple-300' : 'bg-purple-900 border-purple-500 cursor-pointer') 
+              : enemy.kind === 'roaming'
+              ? (enemy.active ? 'bg-orange-600 border-orange-300 animate-pulse cursor-pointer' : 'bg-red-500 border-red-300') 
+              : 'bg-gray-500 border-gray-300'
+          } hover:ring-2 hover:ring-yellow-400`}
+               onClick={(e) => {
+                 const isDelete = e.shiftKey;
+                 onEnemyClick?.(x, y, isDelete);
+               }}
+               title={`${enemy.kind === 'stationary' ? 'Stationary' : 'Roaming'} enemy - Click to toggle, Shift+Click to delete`}
           >
-            <span className="text-white text-xs font-bold">{enemy.kind === 'chaser' ? (enemy.active ? 'C' : 'c') : 'E'}</span>
+            <span className="text-white text-xs font-bold">
+              {enemy.kind === 'stationary' ? (enemy.active ? '9' : '9') : enemy.kind === 'roaming' ? (enemy.active ? '*!' : '*') : '?'}
+            </span>
           </div>
         )}
         {isPlayer && (
@@ -81,15 +93,23 @@ export default function MazeGrid({ gameState, onEnemyClick }: MazeGridProps) {
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-          <span>Roaming Enemy</span>
+          <span>Roaming Enemy (*) - random movement</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-purple-600 rounded-full"></div>
-          <span>Chaser (active)</span>
+          <div className="w-4 h-4 bg-orange-600 rounded-full"></div>
+          <span>Roaming Enemy (*!) - chasing player</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 bg-purple-900 rounded-full"></div>
-          <span>Chaser (click to activate)</span>
+          <span>Stationary Enemy (9) - click to activate</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-purple-600 rounded-full"></div>
+          <span>Stationary Enemy (9) - active, chasing</span>
+        </div>
+        <div className="mt-2 text-xs text-gray-400">
+          <p>• Click enemies to toggle behavior</p>
+          <p>• Shift+Click enemies to delete them</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 bg-emerald-500 border-2 border-green-500"></div>
